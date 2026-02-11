@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "CartVault Saver",
+  "version": "1.0",
+  "description": "Save products from shopping sites to CartVault",
+
+"permissions": [
+  "activeTab",
+  "tabs",
+  "scripting",
+  "storage"
+],
+
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "*://*.amazon.in/*",
+    "*://*.myntra.com/*",
+    "*://*.meesho.com/*"
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Save to CartVault"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.in/*",
+        "*://*.myntra.com/*",
+        "*://*.meesho.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
