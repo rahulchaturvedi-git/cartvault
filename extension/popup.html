@@ -12,16 +12,13 @@
 
     input {
       width: 100%;
-      padding: 8px;
+      padding: 6px;
       margin-bottom: 10px;
-      font-size: 13px;
-      box-sizing: border-box;
     }
 
     button {
       padding: 10px;
       width: 100%;
-      font-size: 14px;
       cursor: pointer;
     }
 
@@ -35,13 +32,9 @@
 <body>
   <h3>CartVault</h3>
 
-  <input
-    type="email"
-    id="email"
-    placeholder="Enter your email"
-  />
-
+  <input id="email" type="email" placeholder="Enter email" />
   <button id="saveBtn">Save Product</button>
+  <div id="status" style="display:none;"></div>
 
   <div id="status"></div>
 

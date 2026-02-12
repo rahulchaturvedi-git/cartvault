@@ -24,10 +24,10 @@ def home():
 # Save item
 @app.post("/save-item")
 def save_item(item: dict):
-    # Check duplicate (same user + same product URL)
+    # Prevent duplicates (same user + same URL)
     existing = products_collection.find_one({
-        "user_email": item.get("user_email"),
-        "url": item.get("url")
+        "user_email": item["user_email"],
+        "url": item["url"]
     })
 
     if existing:

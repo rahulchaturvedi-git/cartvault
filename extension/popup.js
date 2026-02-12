@@ -1,5 +1,6 @@
+const saveBtn = document.getElementById("saveBtn");
+const statusDiv = document.getElementById("status");
 const emailInput = document.getElementById("email");
-const statusDiv = document.getElementById("status");
 
 // Load saved email
 chrome.storage.local.get(["user_email"], (result) => {
@@ -8,7 +9,7 @@ chrome.storage.local.get(["user_email"], (result) => {
   }
 });
 
-document.getElementById("saveBtn").addEventListener("click", async () => {
+saveBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
 
   if (!email) {
@@ -20,102 +21,75 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
   chrome.storage.local.set({ user_email: email });
 
+  // Get active tab
   const [tab] = await chrome.tabs.query({
     active: true,
     currentWindow: true
   });
 
-  // 🔴 Ensure content script exists
-  await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: ["content.js"]
-  });
-
-  // Now send message
-  chrome.tabs.sendMessage(
-    tab.id,
-    { action: "extract" },
-    function (productData) {
-
-      if (chrome.runtime.lastError || !productData) {
-        statusDiv.style.display = "block";
-        statusDiv.style.color = "red";
-        statusDiv.innerText = "Not a supported product page";
-        setTimeout(() => window.close(), 1500);
-        return;
-      }
-
-      productData.user_email = email;
-
-      const emailInput = document.getElementById("email");
-const statusDiv = document.getElementById("status");
-
-// Load saved email
-chrome.storage.local.get(["user_email"], (result) => {
-  if (result.user_email) {
-    emailInput.value = result.user_email;
-  }
-});
-
-document.getElementById("saveBtn").addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-
-  if (!email) {
-    statusDiv.style.display = "block";
-    statusDiv.style.color = "red";
-    statusDiv.innerText = "Enter email first";
-    return;
+  try {
+    // Force inject content script (Fix for Flipkart SPA)
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content.js"]
+    });
+  } catch (e) {
+    console.log("Script already injected");
   }
 
-  chrome.storage.local.set({ user_email: email });
+  // Ask for product data
+  chrome.tabs.sendMessage(tab.id, { action: "extract" }, async (productData) => {
 
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true
-  });
+    console.log("Product data received:", productData);
 
-  // 🔴 Ensure content script exists
-  await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: ["content.js"]
-  });
+    if (chrome.runtime.lastError || !productData) {
+      console.error("Error:", chrome.runtime.lastError);
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "red";
+      statusDiv.innerText = "Not a product page";
+      setTimeout(() => window.close(), 1500);
+      return;
+    }
 
-  // Now send message
-  chrome.tabs.sendMessage(
-    tab.id,
-    { action: "extract" },
-    function (productData) {
+    // Validate that we have essential data
+    if (!productData.title || productData.title === "Flipkart Product" && productData.price === "0") {
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "red";
+      statusDiv.innerText = "Could not extract product data";
+      console.error("Invalid product data:", productData);
+      setTimeout(() => window.close(), 2000);
+      return;
+    }
 
-      if (chrome.runtime.lastError || !productData) {
-        statusDiv.style.display = "block";
-        statusDiv.style.color = "red";
-        statusDiv.innerText = "Not a supported product page";
-        setTimeout(() => window.close(), 1500);
-        return;
-      }
+    productData.user_email = email;
 
-      productData.user_email = email;
-
-      fetch("http://127.0.0.1:8000/save-item", {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/save-item", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(productData)
-      })
-        .then(() => {
-          statusDiv.style.display = "block";
-          statusDiv.style.color = "green";
-          statusDiv.innerText = "Saved ✓";
-          setTimeout(() => window.close(), 2000);
-        })
-        .catch(() => {
-          statusDiv.style.display = "block";
-          statusDiv.style.color = "red";
-          statusDiv.innerText = "Backend error";
-        });
-    }
-  );
-});
+      });
 
+      const result = await response.json();
+      console.log("Server response:", result);
+
+      if (!response.ok) {
+        throw new Error(result.message || "Server error");
+      }
+
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "green";
+      statusDiv.innerText = "Saved ✓";
+
+      setTimeout(() => window.close(), 1500);
+
+    } catch (err) {
+      console.error("Error saving:", err);
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "red";
+      statusDiv.innerText = "Error: " + err.message;
     }
-  );
+  });
 });

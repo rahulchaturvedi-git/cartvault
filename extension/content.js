@@ -1,13 +1,14 @@
-function waitForElement(selector, timeout = 3000) {
+// Wait helper (for dynamic sites like Flipkart/Amazon)
+function waitForElement(selector, timeout = 5000) {
   return new Promise((resolve) => {
     const interval = 100;
     let elapsed = 0;
 
     const timer = setInterval(() => {
-      const element = document.querySelector(selector);
-      if (element) {
+      const el = document.querySelector(selector);
+      if (el) {
         clearInterval(timer);
-        resolve(element);
+        resolve(el);
       }
       elapsed += interval;
       if (elapsed >= timeout) {
@@ -18,30 +19,17 @@ function waitForElement(selector, timeout = 3000) {
   });
 }
 
+/* ================= AMAZON ================= */
 async function extractAmazon() {
-  // Wait until product title loads
   const titleEl = await waitForElement("#productTitle");
-  if (!titleEl) return null;
 
-  const title = titleEl.innerText.trim();
-
-  let price = "";
-
-  const priceEls = document.querySelectorAll(".a-price .a-offscreen");
-  for (let el of priceEls) {
-    if (el.innerText.trim()) {
-      price = el.innerText;
-      break;
-    }
-  }
-
-  if (!price) {
-    const whole = document.querySelector(".a-price-whole")?.innerText;
-    const fraction = document.querySelector(".a-price-fraction")?.innerText;
-    if (whole) price = whole + (fraction ? "." + fraction : "");
-  }
-
-  if (!price) price = "0";
+  let price =
+    document.querySelector(".a-price .a-offscreen")?.innerText ||
+    document.querySelector("#priceblock_dealprice")?.innerText ||
+    document.querySelector("#priceblock_ourprice")?.innerText ||
+    document.querySelector("#price_inside_buybox")?.innerText ||
+    document.querySelector(".a-price-whole")?.innerText ||
+    "0";
 
   const image =
     document.querySelector("#landingImage")?.src ||
@@ -49,78 +37,87 @@ async function extractAmazon() {
     "";
 
   return {
-    title,
-    price: price.replace(/[^\d.]/g, ""),
+    title: titleEl?.innerText.trim() || "Amazon Product",
+    price: price.replace(/[^\d.]/g, "") || "0",
     image,
     url: window.location.href,
     website: "amazon"
   };
 }
 
+/* ================= MYNTRA ================= */
 async function extractMyntra() {
-  const titleEl = await waitForElement("h1");
-  if (!titleEl) return null;
+  const titleEl = await waitForElement("h1.pdp-title");
 
-  const title = titleEl.innerText;
-
-  const price =
-    document.querySelector(".pdp-price strong")?.innerText || "0";
+  const priceEl =
+    document.querySelector(".pdp-price strong") ||
+    document.querySelector(".pdp-discount-container strong");
 
   const image =
     document.querySelector("meta[property='og:image']")?.content || "";
 
   return {
-    title,
-    price: price.replace(/[^\d.]/g, ""),
+    title: titleEl?.innerText.trim() || "Myntra Product",
+    price: priceEl?.innerText.replace(/[^\d.]/g, "") || "0",
     image,
     url: window.location.href,
     website: "myntra"
   };
 }
 
-function extractMeesho() {
-  const title =
-    document.querySelector("h1")?.innerText ||
-    document.querySelector("[data-testid='product-title']")?.innerText ||
-    "Meesho Product";
+/* ================= MEESHO ================= */
+async function extractMeesho() {
+  const titleEl = await waitForElement("h1");
 
-  // Price (Meesho uses multiple structures)
-  let price =
-    document.querySelector("h4")?.innerText ||
-    document.querySelector("[data-testid='price']")?.innerText ||
-    "";
+  const priceEl =
+    document.querySelector("h4") ||
+    document.querySelector("span");
 
-  // Clean price
-  price = price.replace(/[^\d.]/g, "") || "0";
-
-  // Image
   const image =
-    document.querySelector("img[alt='product-image']")?.src ||
-    document.querySelector("meta[property='og:image']")?.content ||
-    "";
+    document.querySelector("meta[property='og:image']")?.content || "";
 
   return {
-    title,
-    price,
+    title: titleEl?.innerText.trim() || "Meesho Product",
+    price: priceEl?.innerText.replace(/[^\d.]/g, "") || "0",
     image,
     url: window.location.href,
     website: "meesho"
   };
 }
 
+/* ================= ROUTER ================= */
 async function extractProductData() {
   const host = window.location.hostname;
+  console.log("Current host:", host);
 
-  if (host.includes("amazon")) return await extractAmazon();
-  if (host.includes("myntra")) return await extractMyntra();
-  if (host.includes("meesho")) return await extractMeesho();
+  let result = null;
 
-  return null;
+  if (host.includes("amazon")) {
+    result = await extractAmazon();
+  } else if (host.includes("myntra")) {
+    result = await extractMyntra();
+  } else if (host.includes("meesho")) {
+    result = await extractMeesho();
+  }
+
+  console.log("Extracted data:", result);
+  return result;
 }
 
+/* ================= MESSAGE LISTENER ================= */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("Message received:", request);
+  
   if (request.action === "extract") {
-    extractProductData().then(sendResponse);
-    return true; // keep message channel open for async
+    extractProductData()
+      .then((data) => {
+        console.log("Sending response:", data);
+        sendResponse(data);
+      })
+      .catch((error) => {
+        console.error("Error in extraction:", error);
+        sendResponse(null);
+      });
+    return true; // required for async response
   }
 });

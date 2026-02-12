@@ -4,19 +4,19 @@
   "version": "1.0",
   "description": "Save products from shopping sites to CartVault",
 
-"permissions": [
-  "activeTab",
-  "tabs",
-  "scripting",
-  "storage"
-],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "storage"
+  ],
 
   "host_permissions": [
-    "http://127.0.0.1:8000/*",
-    "*://*.amazon.in/*",
-    "*://*.myntra.com/*",
-    "*://*.meesho.com/*"
-  ],
+  "http://127.0.0.1:8000/*",
+  "*://*.amazon.in/*",
+  "*://*.myntra.com/*",
+  "*://*.meesho.com/*"
+],
 
   "action": {
     "default_popup": "popup.html",
