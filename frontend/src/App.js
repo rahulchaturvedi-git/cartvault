@@ -31,11 +31,16 @@ function App() {
   };
 
   const deleteItem = async (id) => {
-    await fetch(`http://127.0.0.1:8000/item/${id}`, {
-      method: "DELETE",
-    });
-    fetchItems();
-  };
+  const confirmDelete = window.confirm("Delete this item?");
+
+  if (!confirmDelete) return;
+
+  await fetch(`http://127.0.0.1:8000/item/${id}`, {
+    method: "DELETE",
+  });
+
+  fetchItems();
+};
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -47,6 +52,12 @@ function App() {
       year: "numeric",
     });
   };
+
+  //Price Format
+  const formatPrice = (price) => {
+  const num = Number(price) || 0;
+  return num.toLocaleString("en-IN");
+};
 
   // Search + Website Filter
   let filteredItems = items.filter((item) => {
@@ -131,25 +142,22 @@ const websiteCount = new Set(
       {/* Website Filter */}
       {items.length > 0 && (
         <div style={{ marginTop: "10px" }}>
-          <button onClick={() => setWebsiteFilter("all")}>All</button>
-          <button
-            onClick={() => setWebsiteFilter("amazon")}
-            style={{ marginLeft: "5px" }}
-          >
-            Amazon
-          </button>
-          <button
-            onClick={() => setWebsiteFilter("myntra")}
-            style={{ marginLeft: "5px" }}
-          >
-            Myntra
-          </button>
-          <button
-            onClick={() => setWebsiteFilter("meesho")}
-            style={{ marginLeft: "5px" }}
-          >
-            Meesho
-          </button>
+          {["all", "amazon", "myntra", "meesho"].map((site) => (
+            <button
+              key={site}
+              onClick={() => setWebsiteFilter(site)}
+              style={{
+                marginLeft: "5px",
+                background: websiteFilter === site ? "#333" : "#eee",
+                color: websiteFilter === site ? "#fff" : "#000",
+                border: "1px solid #ccc",
+                padding: "5px 10px",
+                cursor: "pointer",
+              }}
+            >
+              {site.charAt(0).toUpperCase() + site.slice(1)}
+            </button>
+          ))}
         </div>
       )}
 
@@ -258,7 +266,7 @@ const websiteCount = new Set(
               </div>
 
               <h4 style={{ margin: "5px 0" }}>{item.title}</h4>
-              <p style={{ margin: "4px 0" }}>₹ {item.price}</p>
+              <p style={{ margin: "4px 0" }}>₹ {formatPrice(item.price)}</p>
               <p style={{ margin: "4px 0" }}>{item.website}</p>
 
               <p
