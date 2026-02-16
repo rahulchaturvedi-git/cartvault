@@ -31,16 +31,42 @@ function App() {
   };
 
   const deleteItem = async (id) => {
-  const confirmDelete = window.confirm("Delete this item?");
+    const confirmDelete = window.confirm("Delete this item?");
 
-  if (!confirmDelete) return;
+    if (!confirmDelete) return;
 
-  await fetch(`http://127.0.0.1:8000/item/${id}`, {
-    method: "DELETE",
-  });
+    await fetch(`http://127.0.0.1:8000/item/${id}`, {
+      method: "DELETE",
+    });
 
-  fetchItems();
-};
+    fetchItems();
+  };
+
+  // Refresh price manually
+  const refreshPrice = async (id) => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/update-price/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update price");
+      }
+
+      // Reload items after update
+      fetchItems();
+    } catch (error) {
+      console.error("Price refresh failed:", error);
+      alert("Failed to refresh price");
+    }
+  };
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -55,9 +81,9 @@ function App() {
 
   //Price Format
   const formatPrice = (price) => {
-  const num = Number(price) || 0;
-  return num.toLocaleString("en-IN");
-};
+    const num = Number(price) || 0;
+    return num.toLocaleString("en-IN");
+  };
 
   // Search + Website Filter
   let filteredItems = items.filter((item) => {
@@ -93,16 +119,16 @@ function App() {
   });
 
   // Dashboard stats
-const totalItems = filteredItems.length;
+  const totalItems = filteredItems.length;
 
-const totalValue = filteredItems.reduce((sum, item) => {
-  const price = Number(item.price) || 0;
-  return sum + price;
-}, 0);
+  const totalValue = filteredItems.reduce((sum, item) => {
+    const price = Number(item.price) || 0;
+    return sum + price;
+  }, 0);
 
-const websiteCount = new Set(
-  filteredItems.map((item) => item.website)
-).size;
+  const websiteCount = new Set(
+    filteredItems.map((item) => item.website)
+  ).size;
 
   return (
     <div
@@ -178,34 +204,34 @@ const websiteCount = new Set(
       )}
 
       {/* Dashboard Stats */}
-        {items.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: "20px",
-              marginTop: "15px",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              background: "#f9f9f9",
-            }}
-          >
-            <div>
-              <strong>{totalItems}</strong>
-              <div style={{ fontSize: "12px", color: "#666" }}>Items</div>
-            </div>
-
-            <div>
-              <strong>₹ {totalValue}</strong>
-              <div style={{ fontSize: "12px", color: "#666" }}>Total Value</div>
-            </div>
-
-            <div>
-              <strong>{websiteCount}</strong>
-              <div style={{ fontSize: "12px", color: "#666" }}>Websites</div>
-            </div>
+      {items.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: "20px",
+            marginTop: "15px",
+            padding: "10px",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            background: "#f9f9f9",
+          }}
+        >
+          <div>
+            <strong>{totalItems}</strong>
+            <div style={{ fontSize: "12px", color: "#666" }}>Items</div>
           </div>
-        )}
+
+          <div>
+            <strong>₹ {totalValue}</strong>
+            <div style={{ fontSize: "12px", color: "#666" }}>Total Value</div>
+          </div>
+
+          <div>
+            <strong>{websiteCount}</strong>
+            <div style={{ fontSize: "12px", color: "#666" }}>Websites</div>
+          </div>
+        </div>
+      )}
 
       {loading && (
         <p style={{ marginTop: "15px" }}>Loading items...</p>
@@ -284,10 +310,24 @@ const websiteCount = new Set(
                   View Product
                 </a>
                 <br />
-                <button onClick={() => deleteItem(item._id)}>
+
+                <button
+                  onClick={() => refreshPrice(item._id)}
+                  style={{ marginTop: "5px" }}
+                >
+                  Refresh Price
+                </button>
+
+                <br />
+
+                <button
+                  onClick={() => deleteItem(item._id)}
+                  style={{ marginTop: "5px" }}
+                >
                   Delete
                 </button>
               </div>
+
             </div>
           ))}
       </div>
