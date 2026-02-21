@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import products_collection
+from database import collection
 from datetime import datetime
 from bson import ObjectId
 import requests
@@ -174,7 +174,7 @@ def home():
 @app.post("/save-item")
 def save_item(item: dict):
     # Prevent duplicates (same user + same URL)
-    existing = products_collection.find_one({
+    existing = collection.find_one({
         "user_email": item["user_email"],
         "url": item["url"]
     })
@@ -183,7 +183,7 @@ def save_item(item: dict):
         return {"message": "Item already saved"}
 
     item["created_at"] = datetime.utcnow()
-    result = products_collection.insert_one(item)
+    result = collection.insert_one(item)
 
     return {
         "message": "Item saved successfully",
@@ -195,16 +195,18 @@ def save_item(item: dict):
 @app.get("/items/{user_email}")
 def get_items(user_email: str):
     items = []
-    cursor = products_collection.find(
+
+    cursor = collection.find(
         {"user_email": user_email}
-    ).sort("created_at", -1)   # newest first
+    ).sort("created_at", -1)
 
     for item in cursor:
         item["_id"] = str(item["_id"])
-        if "created_at" in item:
+        if "created_at" in item and item["created_at"]:
             item["created_at"] = item["created_at"].isoformat()
         items.append(item)
-
+    
+    print("Items found: ", len(items))
     return items
 
 
@@ -212,7 +214,7 @@ def get_items(user_email: str):
 # Delete item
 @app.delete("/item/{item_id}")
 def delete_item(item_id: str):
-    result = products_collection.delete_one({"_id": ObjectId(item_id)})
+    result = collection.delete_one({"_id": ObjectId(item_id)})
 
     if result.deleted_count == 1:
         return {"message": "Item deleted"}
@@ -224,7 +226,7 @@ def delete_item(item_id: str):
 # Update item price
 @app.put("/update-price/{item_id}")
 def update_price(item_id: str):
-    item = products_collection.find_one({"_id": ObjectId(item_id)})
+    item = collection.find_one({"_id": ObjectId(item_id)})
 
     if not item:
         return {"message": "Item not found"}
@@ -240,7 +242,7 @@ def update_price(item_id: str):
     if not new_price:
         return {"message": "Could not fetch price"}
 
-    products_collection.update_one(
+    collection.update_one(
         {"_id": ObjectId(item_id)},
         {"$set": {"price": new_price}}
     )

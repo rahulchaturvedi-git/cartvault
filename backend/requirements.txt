@@ -19,3 +19,4 @@ typing_extensions==4.15.0
 uvicorn==0.40.0
 selenium==4.40.0
 webdriver-manager==4.0.1
+apscheduler==3.9.1
