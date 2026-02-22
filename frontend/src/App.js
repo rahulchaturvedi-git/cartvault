@@ -23,11 +23,7 @@ function App() {
       );
       const data = await response.json();
 
-      if (Array.isArray(data)) {
-        setItems(data);
-      } else {
-        setItems([]);
-      }
+      setItems(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Fetch error:", error);
       setItems([]);
@@ -121,13 +117,7 @@ function App() {
 
   // ================= UI =================
   return (
-    <div
-      style={{
-        maxWidth: "1000px",
-        margin: "auto",
-        padding: "20px",
-      }}
-    >
+    <div style={{ maxWidth: "1000px", margin: "auto", padding: "20px" }}>
       <h2>CartVault Dashboard</h2>
 
       {/* ================= Email Input ================= */}
@@ -146,11 +136,7 @@ function App() {
           placeholder="Search items..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          style={{
-            marginLeft: "10px",
-            padding: "6px",
-            width: "220px",
-          }}
+          style={{ marginLeft: "10px", padding: "6px", width: "220px" }}
         />
       )}
 
@@ -226,7 +212,7 @@ function App() {
         </div>
       )}
 
-      {/* ================= Loading / Empty States ================= */}
+      {/* ================= Loading / Empty ================= */}
       {loading && <p style={{ marginTop: "15px" }}>Loading items...</p>}
 
       {!loading && items.length === 0 && email && (
@@ -257,7 +243,7 @@ function App() {
               flexDirection: "column",
             }}
           >
-            {/* ================= Product Image ================= */}
+            {/* Image */}
             <div
               style={{
                 width: "100%",
@@ -271,11 +257,7 @@ function App() {
               <img
                 src={item.image}
                 alt={item.title}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 onError={(e) => {
                   e.target.src =
                     "https://via.placeholder.com/300x300?text=No+Image";
@@ -283,65 +265,63 @@ function App() {
               />
             </div>
 
-            {/* ================= Product Info ================= */}
             <h4 style={{ margin: "5px 0" }}>{item.title}</h4>
 
-            {/* Price Section (Phase 6) */}
-            <div style={{ margin: "4px 0" }}>
-              <strong>₹ {formatPrice(item.price)}</strong>
+            {/* ================= Price Section (Final) ================= */}
+            <div style={{ margin: "6px 0" }}>
+              <div style={{ fontWeight: "bold", fontSize: "16px" }}>
+                ₹ {formatPrice(item.price)}
+              </div>
 
-              {item.price_drop && (
-                <span
-                  style={{
-                    color: "green",
-                    marginLeft: "8px",
-                    fontWeight: "bold",
-                    fontSize: "13px",
-                  }}
-                >
-                  ↓ Price Dropped
-                </span>
-              )}
+              {item.previous_price &&
+                item.price_drop && (
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      padding: "3px 6px",
+                      background: "#e6f7e6",
+                      color: "#1a7f37",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      display: "inline-block",
+                    }}
+                  >
+                    ↓ Price dropped from ₹ {formatPrice(item.previous_price)}
+                  </div>
+                )}
 
-              {item.previous_price && item.price_drop && (
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#888",
-                    textDecoration: "line-through",
-                  }}
-                >
-                  ₹ {formatPrice(item.previous_price)}
-                </div>
-              )}
+              {item.previous_price &&
+                !item.price_drop &&
+                Number(item.price) > Number(item.previous_price) && (
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      padding: "3px 6px",
+                      background: "#ffe6e6",
+                      color: "#b30000",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      display: "inline-block",
+                    }}
+                  >
+                    ↑ Price increased from ₹ {formatPrice(item.previous_price)}
+                  </div>
+                )}
             </div>
 
             <p style={{ margin: "4px 0" }}>{item.website}</p>
 
-            <p
-              style={{
-                margin: "4px 0",
-                fontSize: "12px",
-                color: "#666",
-              }}
-            >
+            <p style={{ fontSize: "12px", color: "#666" }}>
               Saved on: {formatDate(item.created_at)}
             </p>
 
-            {/* Last Checked */}
             {item.last_checked && (
-              <p
-                style={{
-                  margin: "2px 0",
-                  fontSize: "11px",
-                  color: "#999",
-                }}
-              >
+              <p style={{ fontSize: "11px", color: "#999" }}>
                 Last checked: {formatDate(item.last_checked)}
               </p>
             )}
 
-            {/* ================= Actions ================= */}
+            {/* Actions */}
             <div style={{ marginTop: "auto" }}>
               <a href={item.url} target="_blank" rel="noreferrer">
                 View Product
