@@ -1,4 +1,4 @@
-// Wait helper (for dynamic sites like Flipkart/Amazon)
+// ================= Wait Helper =================
 function waitForElement(selector, timeout = 5000) {
   return new Promise((resolve) => {
     const interval = 100;
@@ -23,7 +23,7 @@ function waitForElement(selector, timeout = 5000) {
 async function extractAmazon() {
   const titleEl = await waitForElement("#productTitle");
 
-  let price =
+  const price =
     document.querySelector(".a-price .a-offscreen")?.innerText ||
     document.querySelector("#priceblock_dealprice")?.innerText ||
     document.querySelector("#priceblock_ourprice")?.innerText ||
@@ -38,7 +38,7 @@ async function extractAmazon() {
 
   return {
     title: titleEl?.innerText.trim() || "Amazon Product",
-    price: price.replace(/[^\d.]/g, "") || "0",
+    price: price.replace(/[^\d.]/g, ""),
     image,
     url: window.location.href,
     website: "amazon"
@@ -106,18 +106,14 @@ async function extractProductData() {
 
 /* ================= MESSAGE LISTENER ================= */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Message received:", request);
-  
   if (request.action === "extract") {
     extractProductData()
-      .then((data) => {
-        console.log("Sending response:", data);
-        sendResponse(data);
-      })
+      .then((data) => sendResponse(data))
       .catch((error) => {
         console.error("Error in extraction:", error);
         sendResponse(null);
       });
-    return true; // required for async response
+
+    return true;
   }
 });

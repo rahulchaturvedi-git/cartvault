@@ -96,6 +96,14 @@ def update_price(item_id: str):
         url = item.get("url")
         print("Fetching price for:", url)
 
+        #skip protected sites (they block selenium)
+        blocked_sites = ["flipkart"]
+
+        if any (site in url.lower() for site in blocked_sites):
+            return{
+                "message": "Auto price refresh not supported for this website. Please check manually."
+            }
+
         from price_service import fetch_price_selenium
         new_price = fetch_price_selenium(url)
 
